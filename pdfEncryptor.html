@@ -1,0 +1,66 @@
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <script src="https://cdn.jsdelivr.net/npm/pdf-lib-plus-encrypt@1.1.0/dist/pdf-lib-plus-encrypt.min.js"></script>
+    <script src="https://unpkg.com/downloadjs@1.4.7"></script>
+</head>
+
+<body>
+    <br>
+    <input type="file" accept="application/pdf"><br><br>
+    <input type="text" id="pw">　<button id="pwGenerate">pw</button><br><br>
+    <input type="text" id="filename"><br><br>
+    <button id="make">run</button>
+    <div id="error"></div>
+</body>
+
+<script type="module">
+
+    document.querySelector("#pwGenerate").addEventListener("click", () => {
+        document.querySelector("#pw").value = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(12)))).substring(0, 12)
+    })
+
+    document.querySelector("input[type=file]").addEventListener("change", (e) => {
+        if (window.File) {
+            document.querySelector("#filename").value = "encrypted_" + document.querySelector("input[type=file]").files[0].name
+        }
+    })
+
+    document.querySelector("#make").addEventListener("click", async function () {
+        document.querySelector("#error").innerHTML = null
+        const appname = ""
+        const password = document.querySelector("#pw").value
+        const filename = document.querySelector("#filename").value
+        var encryptOption = {
+            pdfVersion: "1.7ext3",
+            userPassword: password,
+            permissions: { printing: true, modifying: true, copying: true },
+        }
+        const { PDFDocument, StandardFonts, rgb } = PDFLib
+        const base = await PDFDocument.create()
+        const aaa = await readFile(document.querySelector("input[type=file]").files[0])
+        const source = await PDFDocument.load(aaa)
+        const sourcepages = await base.copyPages(source, source.getPageIndices())
+        sourcepages.forEach((page) => base.addPage(page))
+        await base.encrypt(encryptOption)
+        await base.setCreator(appname)
+        await base.setProducer(appname)
+        const pdf = await base.save()
+        download(pdf, filename, "application/pdf")
+    })
+
+    async function readFile(file) {
+        return new Promise((resolve, reject) => {
+            let reader = new FileReader()
+            reader.onload = () => {
+                resolve(reader.result);
+            }
+            reader.onerror = reject
+            reader.readAsArrayBuffer(file)
+        })
+    }
+
+</script>
+
+</html>
